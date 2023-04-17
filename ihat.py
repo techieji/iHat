@@ -1,20 +1,18 @@
-# Requirements: sympy, numpy
-
 from sympy import *
 from itertools import chain
 import numpy as np
 import heapq
 
-from data import get_iris
+from data import get_iris, fake_force_data
 from utils import container
 
 np.seterr(all="ignore")
 init_printing()
 
-vs, entries, data = get_iris()
+vs, entries, data = fake_force_data()
 
-dv = symbols('pl')           # Trying to predict petal length
-using = symbols('sl sw')     # Using sepal length and width
+dv = symbols('a')           # Trying to predict petal length
+using = symbols('m F')     # Using sepal length and width
 
 def get_all_mutations(expr):   # Very simple for now
     for x in using:
@@ -26,8 +24,9 @@ def get_all_mutations(expr):   # Very simple for now
 def assess(expr):       # Lower is better
     f = lambdify(vs, expr, "numpy")
     o = f(*entries)
-    acc = np.nanvar(data[dv] / o) + np.nanvar(o / data[dv])
-    return v
+    accuracy   = np.nanvar(data[dv] / o) + np.nanvar(o / data[dv])
+    complexity = sum(map(expr.count, vs))
+    return accuracy + complexity**2
 
 gen = [Integer(1)]
 temp_store = []
