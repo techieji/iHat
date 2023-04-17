@@ -2,22 +2,16 @@
 
 from sympy import *
 from itertools import chain
-from dataclasses import dataclass, field
-from typing import Any       # If I didn't have to, I wouldn't
 import numpy as np
-import csv
 import heapq
 
+from data import get_iris
+from utils import container
+
 np.seterr(all="ignore")
+init_printing()
 
-
-from pprint import pprint
-
-with open('iris.data') as iris:
-    _vs, *_data = list(csv.reader(iris))
-    vs = symbols(_vs[:-1])               # Going to be used to actually evaluate a hypothesis
-    entries = np.array([x[:-1] for x in _data], dtype=np.float32).T    # Removing class (meant for continuous data)
-    data = dict(zip(vs, entries))
+vs, entries, data = get_iris()
 
 dv = symbols('pl')           # Trying to predict petal length
 using = symbols('sl sw')     # Using sepal length and width
@@ -32,13 +26,8 @@ def get_all_mutations(expr):   # Very simple for now
 def assess(expr):       # Lower is better
     f = lambdify(vs, expr, "numpy")
     o = f(*entries)
-    v = np.nanvar(data[dv] / o) + np.nanvar(o / data[dv])
+    acc = np.nanvar(data[dv] / o) + np.nanvar(o / data[dv])
     return v
-
-@dataclass(order=True)
-class container:
-    assessment: float
-    expr: Any = field(compare=False)
 
 gen = [Integer(1)]
 temp_store = []
