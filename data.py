@@ -15,15 +15,18 @@ def get_iris():
     return vs, entries, data
 
 def fake_force_data(datasize=210):     # a = F/m    =>    F = ma
-    _masses = [randint(1, 100) for _ in range(3)]
+    _masses = [randint(10, 100) for _ in range(3)]
     masses = np.empty(datasize)
     size = datasize//2
     masses[0:size] = _masses[0]
     masses[size:2*size] = _masses[1]
     masses[2*size:3*size] = _masses[2]
-    force = rng.integers(low=10, high=100, size=datasize)
-    acceleration = force/masses + rng.normal(size=datasize) * 5
+    force = rng.integers(low=100, high=1000, size=datasize)
+    acceleration = force/masses + rng.normal(size=datasize)/10
     vs = symbols('m F a')
     entries = np.array([masses, force, acceleration])
     data = dict(zip(vs, entries))
     return vs, entries, data
+
+if __name__ == '__main__':
+    print(fake_force_data()[2])
