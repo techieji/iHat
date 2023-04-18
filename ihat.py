@@ -2,6 +2,7 @@ from sympy import *
 from itertools import chain
 import numpy as np
 import heapq
+from typing import Iterable, Any
 
 from data import get_iris, fake_force_data
 from utils import container
@@ -28,8 +29,8 @@ def assess(expr):       # Lower is better
     complexity   = sum(map(expr.count, vs))
     return accuracy + max(complexity - completeness, 0)**2
 
-gen = [*using]
-temp_store = []
+gen: Iterable[Any] = [*using]
+temp_store: list[container] = []
 for _ in range(10):     # Number of generations
     for expr in gen:
         heapq.heappush(temp_store, container(assess(expr), expr))
