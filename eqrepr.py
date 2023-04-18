@@ -7,6 +7,8 @@ import operator as op
 import random as rd
 import itertools as it
 import numpy as np
+from functools import cached_property
+from sympy import lambdify, symbols
 
 class INS(Enum):
     LOAD_CONST = 0
@@ -20,7 +22,7 @@ class INS(Enum):
 
 Ins = namedtuple('Ins', 'ins arg')     # Arg is used by load_const and load_var with index
 
-class expr:
+class expr:     # Immutable
     def __init__(self, inses, constants, vs):
         self.inses = inses
         self.constants = constants if type(constants) is np.ndarray else np.array(constants)
@@ -65,3 +67,15 @@ class expr:
                 continue
         constants = self.constants + rng.normal(size=len(self.constants))
         return expr(reorder, constants, self.vars)
+
+    @cached_property
+    def symbols(self):
+        return symbols(self.vars)
+
+    @cached_property
+    def to_expr(self):
+        return self.eval(self.symbols)
+
+    @cached_property
+    def vectorized(self):
+        return lambdify(self.symbols, self.to_expr(), "numpy")
