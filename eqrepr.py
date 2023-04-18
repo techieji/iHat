@@ -1,9 +1,10 @@
 # Expression representation (to replace sympy) (stack based)
 
 from enum import Enum
-from collection import namedtuple
+from collections import namedtuple
 from math import sqrt
 import operator as op
+import random as rd
 
 class INS(Enum):
     LOAD_CONST = 0
@@ -35,5 +36,23 @@ class expr:
                 case INS.SQRT:
                     stack.append(sqrt(stack.pop()))
                 case _:
-                    stack.append(ins.ins(stack.pop(), stack.pop()))    # Yeah, it's reversed, ig
+                    stack.append(ins.ins.value(stack.pop(), stack.pop()))    # Yeah, it's reversed, ig
         return stack.pop()
+
+    @property
+    def valid(self):     # O(n)
+        sc = 0
+        for ins in self.inses:
+            match ins.ins:
+                case INS.LOAD_CONST | INS.LOAD_VAR:
+                    sc += 1
+                case INS.SQRT:
+                    None
+                case _:
+                    sc -= 1
+            if sc < 0:
+                return False
+        return True
+
+    def get_mutation(self):
+        return 
