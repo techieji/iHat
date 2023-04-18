@@ -5,6 +5,8 @@ from collections import namedtuple
 from math import sqrt
 import operator as op
 import random as rd
+import itertools as it
+import numpy as np
 
 class INS(Enum):
     LOAD_CONST = 0
@@ -16,13 +18,13 @@ class INS(Enum):
     POW = pow
     SQRT = 7
 
-Ins = namedtuple('ins', 'ins arg')     # Arg is used by load_const and load_var with index
+Ins = namedtuple('Ins', 'ins arg')     # Arg is used by load_const and load_var with index
 
 class expr:
-    def __init__(self, inses, constants, vars):
+    def __init__(self, inses, constants, vs):
         self.inses = inses
-        self.constants = constants
-        self.vars = vars
+        self.constants = constants if type(constants) is np.ndarray else np.array(constants)
+        self.vars = vs
     
     def eval(self, *args):             # Simple, dirty, and dumb way of doing it
         vs = dict(zip(self.vars, args))
@@ -54,5 +56,12 @@ class expr:
                 return False
         return True
 
-    def get_mutation(self):
-        return 
+    def get_mutation(self, rng=np.random):
+        while True:
+            try:
+                reorder = next(x for x in it.permutations(self.inses) if rd.random() < 0.1)
+                break
+            except StopIteration:
+                continue
+        constants = self.constants + rng.normal(size=len(self.constants))
+        return expr(reorder, constants, self.vars)
