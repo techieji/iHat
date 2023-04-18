@@ -1,4 +1,4 @@
-# Expression representation (to replace sympy) (stack based)
+# Expression representation (stack based)
 
 from enum import Enum
 from collections import namedtuple
@@ -7,8 +7,9 @@ import operator as op
 import random as rd
 import itertools as it
 import numpy as np
-from functools import cached_property
+from functools import cached_property, partial
 from sympy import lambdify, symbols
+from sympy.core.symbol import Symbol
 
 class INS(Enum):
     LOAD_CONST = 0
@@ -20,13 +21,29 @@ class INS(Enum):
     POW = pow
     SQRT = 7
 
+ALL_INS_TYPES = list(map(partial(getattr, INS), filter(str.isupper, dir(INS))))
+
 Ins = namedtuple('Ins', 'ins arg')     # Arg is used by load_const and load_var with index
 
+def get_random_ins(const_bound: int, vs: list[Symbol]) -> Ins:
+    t = rd.choice(ALL_INS_TYPES)
+    match t:
+        case INS.LOAD_CONST:
+            return Ins(t, rd.randint(0, const_bound))
+        case INS.LOAD_VAR:
+            return Ins(t, rd.choice(vs))
+        case _:
+            return Ins(t, None)
+
 class expr:     # Immutable
-    def __init__(self, inses, constants, vs):
-        self.inses = inses
+    def __init__(self, inses, constants, vs: tuple[Symbol]):
+        self.inses = list(inses)
         self.constants = constants if type(constants) is np.ndarray else np.array(constants)
         self.vars = vs
+
+    @cached_property
+    def const_len(self):
+        return len(self.constants)
     
     def eval(self, *args):             # Simple, dirty, and dumb way of doing it
         vs = dict(zip(self.vars, args))
@@ -63,23 +80,19 @@ class expr:     # Immutable
         return w
 
     def _get_raw_mutation(self, rng=np.random):
-        while True:
-            try:
-                reorder = next(x for x in it.permutations(self.inses) if rd.random() < 0.1)
-                break
-            except StopIteration:
-                continue
+        inses = self.inses + [get_random_ins(self.const_len, self.vs)] if rd.random() < 0.1 else self.inses    # TODO: parametrize
+        try:
+            # Not shuffle bc we want it to be similar
+            inses = next(x for x in it.permutations(inses) if rd.random() < 0.1)   # TODO: Change threshold to depend on length
+        except StopIteration:
+            shuffle(inses)
         constants = self.constants + rng.normal(size=len(self.constants))
-        return expr(reorder, constants, self.vars)
-
-    @cached_property
-    def symbols(self):
-        return symbols(self.vars)
+        return expr(inses, constants, self.vars)
 
     @cached_property
     def to_expr(self):
-        return self.eval(self.symbols)
+        return self.eval(self.vars)
 
     @cached_property
     def vectorized(self):
-        return lambdify(self.symbols, self.to_expr(), "numpy")
+        return lambdify(self.vars, self.to_expr(), "numpy")

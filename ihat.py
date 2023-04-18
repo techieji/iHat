@@ -6,6 +6,7 @@ from typing import Iterable, Any
 
 from data import get_iris, fake_force_data
 from utils import container
+from eqrepr import expr
 
 np.seterr(all="ignore")
 init_printing()
@@ -14,15 +15,8 @@ vs, entries, data = fake_force_data()
 dv = symbols('F')           # Trying to predict petal length
 using = symbols('m a')     # Using sepal length and width
 
-def get_all_mutations(expr):   # Very simple for now
-    for x in using:
-        yield expr + x
-        yield expr - x
-        yield expand(expr * x)
-        yield expand(expr / x)
-
 def assess(expr):       # Lower is better
-    f = lambdify(vs, expr, "numpy")
+    f = expr.vectorized
     o = f(*entries)
     accuracy     = np.nanvar(data[dv] / o) + np.nanvar(o / data[dv])
     completeness = sum(min(expr.count(v), 1) for v in vs)
