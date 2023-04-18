@@ -59,6 +59,10 @@ class expr:     # Immutable
         return True
 
     def get_mutation(self, rng=np.random):
+        while not (w := self._get_raw_mutation(rng)).valid: pass
+        return w
+
+    def _get_raw_mutation(self, rng=np.random):
         while True:
             try:
                 reorder = next(x for x in it.permutations(self.inses) if rd.random() < 0.1)
