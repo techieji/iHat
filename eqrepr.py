@@ -10,6 +10,7 @@ import numpy as np
 from functools import cached_property, partial
 from sympy import lambdify, symbols
 from sympy.core.symbol import Symbol
+from random import shuffle
 
 class INS(Enum):
     LOAD_CONST = 0
@@ -36,32 +37,46 @@ def get_random_ins(const_bound: int, vs: list[Symbol]) -> Ins:
             return Ins(t, None)
 
 class expr:     # Immutable
-    def __init__(self, inses, constants, vs: tuple[Symbol]):
+    def __init__(self, inses, constants, vs: tuple[Symbol], using):
         self.inses = list(inses)
         self.constants = constants if type(constants) is np.ndarray else np.array(constants)
         self.vars = vs
+        self.using = using
+
+    def __repr__(self): return f"expr<{repr(self.sympy_expr)}>"
 
     @cached_property
     def const_len(self):
         return len(self.constants)
     
     def eval(self, *args):             # Simple, dirty, and dumb way of doing it
-        vs = dict(zip(self.vars, args))
-        stack = []
-        for ins in self.inses:
-            match ins.ins:
-                case INS.LOAD_CONST:
-                    stack.append(self.constants[ins.arg])
-                case INS.LOAD_VAR:
-                    stack.append(vs[ins.arg])
-                case INS.SQRT:
-                    stack.append(sqrt(stack.pop()))
-                case _:
-                    stack.append(ins.ins.value(stack.pop(), stack.pop()))    # Yeah, it's reversed, ig
-        return stack.pop()
+        try:
+            vs = dict(zip(self.vars, args))
+            stack = []
+            for ins in self.inses:
+                match ins.ins:
+                    case INS.LOAD_CONST:
+                        stack.append(self.constants[ins.arg])
+                    case INS.LOAD_VAR:
+                        stack.append(vs[ins.arg])
+                    case INS.SQRT:
+                        stack.append(sqrt(stack.pop()))
+                    case _:
+                        stack.append(ins.ins.value(stack.pop(), stack.pop()))    # Yeah, it's reversed, ig
+            return stack.pop()
+        except (ValueError, TypeError):
+            return np.inf
 
-    @property
-    def valid(self):     # O(n)
+    @cached_property
+    def valid(self):
+        try:
+            self.sympy_expr
+            return True
+        except IndexError:
+            return False
+
+    @cached_property
+    def _valid(self):     # O(n)
         sc = 0
         for ins in self.inses:
             match ins.ins:
@@ -75,24 +90,31 @@ class expr:     # Immutable
                 return False
         return True
 
+    def get_n_mutations(self, n, rng):
+        yield from (self.get_mutation(rng) for _ in range(n))
+
     def get_mutation(self, rng=np.random):
         while not (w := self._get_raw_mutation(rng)).valid: pass
         return w
 
     def _get_raw_mutation(self, rng=np.random):
-        inses = self.inses + [get_random_ins(self.const_len, self.vs)] if rd.random() < 0.1 else self.inses    # TODO: parametrize
+        inses = self.inses + [get_random_ins(self.const_len, self.using)] if rd.random() < 0.1 else self.inses    # TODO: parametrize
         try:
             # Not shuffle bc we want it to be similar
             inses = next(x for x in it.permutations(inses) if rd.random() < 0.1)   # TODO: Change threshold to depend on length
         except StopIteration:
             shuffle(inses)
         constants = self.constants + rng.normal(size=len(self.constants))
-        return expr(inses, constants, self.vars)
+        return expr(inses, constants, self.vars, self.using)
 
     @cached_property
-    def to_expr(self):
-        return self.eval(self.vars)
+    def sympy_expr(self):
+        return self.eval(*self.vars)
 
     @cached_property
     def vectorized(self):
-        return lambdify(self.vars, self.to_expr(), "numpy")
+        return lambdify(self.vars, self.sympy_expr, "numpy")
+
+    @staticmethod
+    def empty(vs: list[Symbol], cl: int, using: list[Symbol]):
+        return expr([Ins(INS.LOAD_CONST, 0)], np.ones(cl), vs, using)
