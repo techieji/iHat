@@ -35,10 +35,10 @@ def assess(expr):       # Lower is better
 gen: Iterable[Any] = [expr.empty(vs, 10, using)]
 temp_store: list[container] = []
 for _ in range(20):     # Number of generations
-    for expr in gen:
-        v = assess(expr)
+    for e in gen:
+        v = assess(e)
         if not np.isnan(v):
-            heapq.heappush(temp_store, container(assess(expr), expr))
+            heapq.heappush(temp_store, container(assess(e), e))
     l = [x.expr for x in temp_store[:10]]
     # l = list(islice((x.expr for x in temp_store if x.assessment != nan or x.assessment != np.nan), 10))
     print(temp_store[0].assessment, type(temp_store[0].assessment))

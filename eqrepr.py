@@ -11,6 +11,7 @@ from functools import cached_property, partial
 from sympy import lambdify, symbols
 from sympy.core.symbol import Symbol
 from random import shuffle
+from typing import Iterable
 
 class INS(Enum):
     LOAD_CONST = 0
@@ -37,7 +38,7 @@ def get_random_ins(const_bound: int, vs: list[Symbol]) -> Ins:
             return Ins(t, None)
 
 class expr:     # Immutable
-    def __init__(self, inses, constants, vs: tuple[Symbol], using):
+    def __init__(self, inses, constants, vs: Iterable[Symbol], using):
         self.inses = list(inses)
         self.constants = constants if type(constants) is np.ndarray else np.array(constants)
         self.vars = vs
