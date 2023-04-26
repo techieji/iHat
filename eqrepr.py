@@ -13,6 +13,8 @@ from sympy.core.symbol import Symbol
 from random import shuffle
 from typing import Iterable
 
+cached_property = property
+
 class INS(Enum):
     LOAD_CONST = 0
     LOAD_VAR   = 1
@@ -44,20 +46,34 @@ class expr:     # Immutable
         self.vars = vs
         self.using = using
 
-    def __repr__(self): return f"expr<{repr(self.sympy_expr)}>"
+    def __hash__(self):
+        try:
+            if self.valid:
+                return hash(self.eval(*self.vars, cnst=self.const_len * [symbols('__CONST__')]))
+            return -1
+        except:
+            breakpoint()
+            raise
+
+    def __repr__(self):
+        try:
+            return f"expr<{repr(self.sympy_expr)}>"
+        except IndexError:
+            return "expr<INVALID>"
 
     @cached_property
     def const_len(self):
         return len(self.constants)
     
-    def eval(self, *args):             # Simple, dirty, and dumb way of doing it
+    def eval(self, *args, cnst=None):             # Simple, dirty, and dumb way of doing it
+        cnst = cnst if cnst is not None else self.constants
         try:
             vs = dict(zip(self.vars, args))
             stack = []
             for ins in self.inses:
                 match ins.ins:
                     case INS.LOAD_CONST:
-                        stack.append(self.constants[ins.arg])
+                        stack.append(cnst[ins.arg])
                     case INS.LOAD_VAR:
                         stack.append(vs[ins.arg])
                     case INS.SQRT:
@@ -71,7 +87,7 @@ class expr:     # Immutable
     @cached_property
     def valid(self):
         try:
-            self.sympy_expr
+            self.eval(*self.vars)
             return True
         except IndexError:
             return False
