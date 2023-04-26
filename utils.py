@@ -45,6 +45,6 @@ class bloom:
 def unique(i: Iterable[Hashable]):
     b = bloom(100)
     for x in i:
-        if i not in b:
-            b.add(i)
-            yield i
+        if x not in b:
+            b.add(x)
+            yield x
