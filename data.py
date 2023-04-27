@@ -16,7 +16,7 @@ def get_iris():
         data = dict(zip(vs, entries))
     return vs, entries, data
 
-def fake_force_data(datasize=210):     # a = F/m    =>    F = ma
+def _fake_force_data(datasize=210):     # a = F/m    =>    F = ma
     _masses = [randint(10, 100) for _ in range(3)]
     masses = np.empty(datasize)
     size = datasize//2
@@ -35,10 +35,15 @@ def from_function(fn: Callable[..., np.ndarray], output_sym: Symbol, ranges: dic
     errors = rng.normal(size=datasize) if error else np.zeros(datasize)
     _entries = [rng.uniform(lower, upper, size=datasize) for lower, upper in ranges.values()]
     res = fn(*_entries) + errors
-    entries = np.column_stack(_entries + [res])
+    entries = np.row_stack(_entries + [res])
     vs = list(syms) + [output_sym]
     data = dict(zip(vs, entries))
     return vs, entries, data
 
+def fake_force_data(datasize=210):
+    a, m, F = symbols('a m F')
+    return from_function(lambda a, m: a * m, F, {a: (0, 20), m: (1, 100)})
+
 if __name__ == '__main__':
-    print(fake_force_data()[2])
+    print(fake_force_data()[1].shape)
+    print(_fake_force_data()[1].shape)
