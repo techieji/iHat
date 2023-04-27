@@ -13,7 +13,8 @@ from sympy.core.symbol import Symbol
 from random import shuffle
 from typing import Iterable
 
-cached_property = property
+# May comment out below to speed up performance
+cached_property = property       # type: ignore
 
 class INS(Enum):
     LOAD_CONST = 0

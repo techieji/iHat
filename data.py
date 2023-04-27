@@ -30,9 +30,9 @@ def fake_force_data(datasize=210):     # a = F/m    =>    F = ma
     data = dict(zip(vs, entries))
     return vs, entries, data
 
-def from_function(fn: Callable[[np.ndarray, ...], np.ndarray], output_sym: Symbol, ranges: dict[Symbol, tuple[float, float]], datasize=210, error=True):
+def from_function(fn: Callable[..., np.ndarray], output_sym: Symbol, ranges: dict[Symbol, tuple[float, float]], datasize=210, error=True):
     syms = ranges.keys()
-    errors = rng.normal(size=datasize) else np.zeros(datasize)
+    errors = rng.normal(size=datasize) if error else np.zeros(datasize)
     _entries = [rng.uniform(lower, upper, size=datasize) for lower, upper in ranges.values()]
     res = fn(*_entries) + errors
     entries = np.column_stack(_entries + [res])
